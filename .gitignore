@@ -1,0 +1,6 @@
+*.o
+*.dylib
+*~
+.zig-cache/*
+snippet_*.zig
+tmpfile_*.zig

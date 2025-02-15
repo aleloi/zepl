@@ -1,0 +1,43 @@
+.{
+    // This is the default name used by packages depending on this one. For
+    // example, when a user runs `zig fetch --save <url>`, this field is used
+    // as the key in the `dependencies` table. Although the user can choose a
+    // different name, most users will stick with this provided value.
+    //
+    // It is redundant to include "zig" in this name because it is already
+    // within the Zig package namespace.
+    .name = "zepl",
+
+    // This is a [Semantic Version](https://semver.org/).
+    // In a future version of Zig it will be used for package deduplication.
+    .version = "0.0.0",
+
+    // This field is optional.
+    // This is currently advisory only; Zig does not yet do anything
+    // with this value.
+    //.minimum_zig_version = "0.11.0",
+
+    // This field is optional.
+    // Each dependency must either provide a `url` and `hash`, or a `path`.
+    // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
+    // Once all dependencies are fetched, `zig build` no longer requires
+    // internet connectivity.
+    .dependencies = .{
+        .linenoise = .{
+            .url = "https://github.com/mrjbq7/linenoize/archive/af2029faaaddcb58e99c195a5f146bbb1af0f90c.tar.gz",
+            .hash = "12208cf74c4291f3c8a314fbb2afec1cd922c58ee9f0d0e160894ad7c4cef584e98d",
+        },
+        // .tmpfile = .{
+        //     .url = "https://github.com/liyu1981/tmpfile.zig/archive/7ca14fb3a8a59e5ab83d3fca7aa0b85e087bd6ff.tar.gz",
+        //     .hash = "122063aa2dd8a08b08f99f7d7714fb2d4f3657323b7d0168c699cef59154c9279891",
+        // },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        // For example...
+        //"LICENSE",
+        //"README.md",
+    },
+}
