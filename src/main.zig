@@ -111,9 +111,12 @@ pub fn main() !void {
             pres.side_effects,
         }) catch unreachable;
 
-        if (!try compilation.snippetChecksOut(allocator, fbs_output.getWritten())) {
-            log.info("Couldn't compile TODO plumb compilation errors here.\n", .{});
-            log.info("Run `build check_snippet -- tmpfile_<NUM>.zig`\n", .{});
+        const comp_out = try compilation.snippetChecksOut(allocator, fbs_output.getWritten());
+
+        if (!comp_out.isSuccess()) {
+            log.info("  comp output: {s}", .{comp_out.stderr});
+            //log.info("Couldn't compile TODO plumb compilation errors here.\n", .{});
+            //log.info("Run `build check_snippet -- tmpfile_<NUM>.zig`\n", .{});
             continue;
         }
 

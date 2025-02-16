@@ -5,8 +5,24 @@ const log = std.log.scoped(.zepl_comp);
 
 var tmpfile_num: u32 = 0;
 
+/// For displaying comp errors.
+pub const CompilationResult = struct {
+    stderr: []const u8,
+    term: std.process.Child.Term,
+    pub fn isSuccess(self: CompilationResult) bool {
+        return switch (self.term) {
+            .Exited => |code| code == 0,
+            else => false,
+        };
+    }
+};
+
+var compilation_stderr_buf: [10000]u8 = undefined;
+
 /// Check if a snippet compiles. TODO fix the pipes to report back errors.
-pub fn snippetChecksOut(allocator: std.mem.Allocator, file_content: []const u8) !bool {
+pub fn snippetChecksOut(allocator: std.mem.Allocator, file_content: []const u8) !CompilationResult {
+    defer tmpfile_num += 1;
+
     const file_name = try std.fmt.allocPrint(allocator, "tmpfile_{d}.zig", .{tmpfile_num});
     const temp_file = try std.fs.cwd().createFile(file_name, .{});
     temp_file.writeAll(file_content) catch unreachable;
@@ -14,28 +30,20 @@ pub fn snippetChecksOut(allocator: std.mem.Allocator, file_content: []const u8) 
     log.debug("  wrote {s}, checking if it compiles\n", .{file_name});
 
     var child = std.process.Child.init(&[_][]const u8{
-        "zig", "build", "check_snippet", "--", file_name,
+        "zig", "build", "check_snippet", "--summary", "none", "--color", "on", "--prominent-compile-errors", "--", file_name,
     }, allocator);
 
-    //const pipes = try std.posix.pipe();
+    child.stderr_behavior = .Pipe;
 
-    //const hej: File =
+    try child.spawn();
+    const sz = try child.stderr.?.readAll(&compilation_stderr_buf);
+    const res = compilation_stderr_buf[0..sz];
 
-    // TODO copy piping logic from prev project... (or not, it's unix-only)
-    //child.stderr = std.fs.File{ .handle = pipes[1] };
-    child.stderr_behavior = .Ignore;
+    const term = try child.wait();
 
-    const status = try child.spawnAndWait();
-    tmpfile_num += 1;
-    log.debug("  {s} compilation exit code: {d}\n", .{ file_name, status.Exited });
+    log.debug("  {s} compilation exit status: {d}\n", .{ file_name, term });
 
-    // TODO read from the pipe; we can't use spawnAndWait
-    // const otherPart = std.fs.File{ .handle = pipes[0] };
-    // var buf: [10000]u8 = undefined;
-    // const sz = try otherPart.readAll(&buf);
-    // std.debug.print("{s}\n", .{buf[0..sz]});
-
-    return status.Exited == 0;
+    return CompilationResult{ .term = term, .stderr = res };
 }
 
 pub const CompileError = error{
@@ -43,6 +51,8 @@ pub const CompileError = error{
 };
 
 /// Compile a snippet into a dylib. Returns dylib path.
+/// Don't capture the output because we already did that in snippetChecksOut.
+/// Which is maybe not OKAY? The comp flags are different!
 pub fn compileSnippet(allocator: std.mem.Allocator, file_name: []const u8, snippet_num: u32) ![:0]const u8 {
     // create subprocess call to zig build-lib ${file_name} ...
     var child = std.process.Child.init(&[_][]const u8{

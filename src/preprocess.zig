@@ -60,7 +60,7 @@ fn preprocDecl(pa: PreprocArgs, parsed: parse.ParsedDecl) !PreprocResult {
         \\ }}
         \\
     , .{ pa.rc.current_context.items, exportDecl, pa.snippet_num, assignment });
-    if (try compilation.snippetChecksOut(pa.allocator, snippet)) {
+    if ((try compilation.snippetChecksOut(pa.allocator, snippet)).isSuccess()) {
         //log.debug("  wow, it compiles!\n", .{});
         return .{
             .extern_def = try std.fmt.allocPrint(pa.allocator, "extern {s} {s}: {s}; \n", .{ parsed.mut, parsed.name, parsed.tpe.? }),
@@ -89,7 +89,7 @@ fn preprocDecl(pa: PreprocArgs, parsed: parse.ParsedDecl) !PreprocResult {
         \\ }}
         \\
     , .{ pa.rc.current_context.items, exportPtrDecl, pa.snippet_num, assignment });
-    if (try compilation.snippetChecksOut(pa.allocator, snippetPtr)) {
+    if ((try compilation.snippetChecksOut(pa.allocator, snippetPtr)).isSuccess()) {
         //log.debug("  wow, it compiles!\n", .{});
         return .{
             .extern_def = try std.fmt.allocPrint(pa.allocator, "extern {s} {s}: *({s}); \n", .{ parsed.mut, parsed.name, parsed.tpe.? }),
@@ -113,9 +113,11 @@ fn preprocDecl(pa: PreprocArgs, parsed: parse.ParsedDecl) !PreprocResult {
         \\ }}
         \\
     , .{ pa.rc.current_context.items, pa.source, pa.snippet_num, parsed.name, parsed.name, parsed.name });
-    if (try compilation.snippetChecksOut(pa.allocator, snippetCmptm)) {
+    const comp_out = try compilation.snippetChecksOut(pa.allocator, snippetCmptm);
+    if (comp_out.isSuccess()) {
         return .{ .comptime_stmt = pa.source, .side_effects = try PreprocResult.makeSideEffects(pa.allocator, pa.snippet_num, "") };
     }
+    log.info("  comp output: {s}", .{comp_out.stderr});
     return error.PreprocError;
 }
 
