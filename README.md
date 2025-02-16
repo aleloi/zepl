@@ -27,6 +27,8 @@ json.static.Parsed(snippet_4.__snippet_4__struct_1667){ .arena = {...} , .state 
 TODO put make a gif and put it here
 
 ### How it works
+TDLR: check the zig docs https://aleloi.github.io/zepl/ 
+
 If you set the log level to .debug in `main.zig` it prints
 ```
 zepl> var x: i32 = 0;
@@ -65,6 +67,7 @@ A list of features that are relatively easy to implement:
 * custom build-file to list additional dependencies.
 * describe the semantics of what commands are allowed. Currenly it just tries to do a few (up to 3) versions of each command until it finds one that compiles.
 * make it build with 0.14
+* gh deploy to auto-update the docs https://aleloi.github.io/zepl/
 
 
 More complex:
