@@ -23,13 +23,17 @@ pub const ParseResult = struct {
     // TODO: include top-level node tag.
 };
 
-fn itCompiles(source: []const u8, zepl_context: ReplContext, alloc: std.mem.Allocator) bool {
+fn itCompiles(source: []const u8, zepl_context: ReplContext, alloc: std.mem.Allocator, log_output: bool) bool {
     const full_source = std.fmt.allocPrint(alloc,
         \\{s}
         \\{s}
         \\
     , .{ zepl_context.current_context.items, source }) catch unreachable;
-    return compilation.snippetChecksOut(alloc, full_source) catch unreachable;
+    const comp_out = compilation.snippetChecksOut(alloc, full_source) catch unreachable;
+    if (log_output) {
+        log.info("  comp output: {s}", .{comp_out.stderr});
+    }
+    return comp_out.isSuccess();
 }
 
 /// Tries to parse in a few different ways. Ast.parse is too permissive, so also runs the compiler.
@@ -39,7 +43,7 @@ pub fn parse(allocator: std.mem.Allocator, src: []const u8, zepl_context: ReplCo
     const blockZ = std.fmt.allocPrintZ(allocator, "test {{ {s} }}", .{src}) catch unreachable;
 
     var ast = std.zig.Ast.parse(allocator, valueZ, .zig) catch unreachable;
-    if (ast.errors.len == 0 and itCompiles(valueZ, zepl_context, allocator)) {
+    if (ast.errors.len == 0 and itCompiles(valueZ, zepl_context, allocator, false)) {
         log.debug("  parsed as a value using {s}\n", .{valueZ});
         return ParseResult{ .tag = .value, .ast = ast };
     } else {
@@ -48,14 +52,14 @@ pub fn parse(allocator: std.mem.Allocator, src: []const u8, zepl_context: ReplCo
     }
 
     ast = std.zig.Ast.parse(allocator, srcZ, .zig) catch unreachable;
-    if (ast.errors.len == 0 and itCompiles(srcZ, zepl_context, allocator)) {
+    if (ast.errors.len == 0 and itCompiles(srcZ, zepl_context, allocator, false)) {
         return ParseResult{ .tag = .container_level_decl, .ast = ast };
     } else {
         ast.deinit(allocator);
         log.debug("  ParseError as container-level, trying block-level\n", .{});
     }
     ast = std.zig.Ast.parse(allocator, blockZ, .zig) catch unreachable;
-    if (ast.errors.len == 0 and itCompiles(blockZ, zepl_context, allocator)) {
+    if (ast.errors.len == 0 and itCompiles(blockZ, zepl_context, allocator, true)) {
         return ParseResult{ .tag = .block_level, .ast = ast };
     } else {
         ast.deinit(allocator);
