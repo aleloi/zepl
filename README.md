@@ -3,6 +3,7 @@
 Experimental Zig REPL.
 
 ### Usage
+![examples/zepl_cast.svg](examples/zepl_cast.svg)
 
 ```C
 $ git clone https://github.com/aleloi/zepl.git && cd zepl
@@ -36,9 +37,6 @@ zepl> tst.string_constant
 { 49, 50, 51 }
 ```
 
-
-### Examples
-TODO put make a gif and put it here
 
 ### How it works
 TDLR: check the zig docs https://aleloi.github.io/zepl/ 
