@@ -69,7 +69,7 @@ pub fn main() !void {
 
     const allocator = arena.allocator();
 
-    while (try ln.linenoise("zepl> ")) |input| {
+    while (try ln.linenoise("\x1B[1mzepl> \x1B[0m")) |input| {
         defer _ = arena.reset(.retain_capacity);
         try ln.history.add(input);
         snippet_num += 1;
@@ -140,7 +140,11 @@ pub fn main() !void {
 
         const sideEffectsName = try @TypeOf(pres).sideEffectsName(allocator, snippet_num);
         const handle = try loadDylib(dylib_name);
-        try runSideEffects(handle, sideEffectsName);
+        {
+            std.debug.print("\x1B[36m", .{});
+            defer std.debug.print("\x1B[0m", .{});
+            try runSideEffects(handle, sideEffectsName);
+        }
     }
 }
 
