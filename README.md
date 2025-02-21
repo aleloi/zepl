@@ -92,13 +92,14 @@ A list of features that I'd like to have but don't know how to implement:
 
 * Gurus say that [hot-reloading](https://github.com/ziglang/zig/issues/68) and [`--watch`](https://ziggit.dev/t/initial-implementation-of-zig-build-watch-just-landed-in-master-branch/5117) is relevant.
 
-* Gurus say that [hot-reloading](https://github.com/ziglang/zig/issues/68) and [`--watch`](https://ziggit.dev/t/initial-implementation-of-zig-build-watch-just-landed-in-master-branch/5117) is relevant.
-
 Chores
 * stop leaking memory
 * add a few tests
 * make a test setup for feeding container-level statements one-by-one into the zepl. It will definitely crash for some.
 
+#### Planned features
+* use something similar to this from the compiler https://github.com/ziglang/zig/blob/master/lib/compiler/reduce/Walk.zig to walk the Ast and find free vars in an expression. Make sure to auto-defererence the ones that the early step made pointers.
+* once that's done: write a test framework that we feed the top-level container members of zig files one expression at a time. For now to check that it compiles+interprets, but later to have an option similar to `python -i script.py`. It would interpret each top-level statement of a file and then enter a repl context with everything evaluated.
 
 
 ### Known issues
