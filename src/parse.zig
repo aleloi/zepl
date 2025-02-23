@@ -31,7 +31,7 @@ fn itCompiles(source: []const u8, zepl_context: ReplContext, alloc: std.mem.Allo
     , .{ zepl_context.current_context.items, source }) catch unreachable;
     const comp_out = compilation.snippetChecksOut(alloc, full_source) catch unreachable;
     if (log_output) {
-        log.info("  comp output: {s}", .{comp_out.stderr});
+        log.debug("  comp output: {s}", .{comp_out.stderr});
     }
     return comp_out.isSuccess();
 }

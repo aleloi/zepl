@@ -5,19 +5,34 @@ const std = @import("std");
 pub const compilation = @import("compilation.zig");
 pub const Linenoise = @import("linenoise").Linenoise;
 pub const preprocess = @import("preprocess.zig");
+pub const Highlight = @import("highlight.zig");
 
 const log = std.log.scoped(.zepl);
 
-pub const std_options = .{
-    .log_level = .info,
+pub var std_options = .{
+    .log_level = .debug,
     .logFn = logFn,
 };
 
+var exportable_log_level: std.log.Level = .info;
+
+var log_level_ptr: *std.log.Level = &exportable_log_level;
+comptime {
+    @export(log_level_ptr, .{ .name = "log_level" });
+}
+// comptime {
+//     @export(options_ptr, .{ .name = "log_options" });
+// }
+
+//pub var
+
 /// See `std.log`.
 pub fn logFn(comptime level: std.log.Level, comptime scope: @TypeOf(.EnumLiteral), comptime format: []const u8, args: anytype) void {
-    const scope_prefix = "(" ++ @tagName(scope) ++ ") ";
-    const prefix = "  [" ++ comptime level.asText() ++ "] " ++ scope_prefix;
-    std.debug.print(prefix ++ format, args);
+    if (@intFromEnum(level) <= @intFromEnum(exportable_log_level)) {
+        const scope_prefix = "(" ++ @tagName(scope) ++ ") ";
+        const prefix = "  [" ++ comptime level.asText() ++ "] " ++ scope_prefix;
+        std.debug.print(prefix ++ format, args);
+    }
 }
 
 /// Write snippet content to a file.
@@ -49,15 +64,42 @@ fn runSideEffects(handle: *anyopaque, sideEffectsName: [:0]const u8) !void {
     myFun();
 }
 
+var hl: Highlight = undefined;
+const stdout = std.io.getStdOut().writer();
+var hl_writer = std.io.bufferedWriter(stdout);
+
+var is_tty: bool = undefined;
+
+/// export so it can be called from generated code.
+export fn highlight(inputZ: [*:0]const u8) callconv(.C) void {
+    const len = std.mem.indexOfSentinel(u8, 0, inputZ);
+    const inputS: [:0]const u8 = inputZ[0..len :0];
+
+    if (is_tty) {
+        hl.highlight(inputS, hl_writer.writer()) catch unreachable;
+        hl_writer.flush() catch unreachable;
+    } else {
+        std.debug.print("{s}", .{inputS});
+    }
+    std.debug.print("\n", .{});
+}
+
 /// Read-Eval-Print Loop.
 pub fn main() !void {
+    //try test_syntax();
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
     const ReplContext = @import("repl_context.zig").ReplContext;
     var zepl_context = ReplContext.init(std.heap.page_allocator);
 
+    try zepl_context.current_context.appendSlice(
+        \\extern const log_level: *@import("std").log.Level;
+        \\extern fn highlight(inputZ: [*:0]const u8) callconv(.C) void;
+    );
+
     var ln = Linenoise.init(std.heap.page_allocator);
+    is_tty = ln.is_tty;
     ln.history.load("history.txt") catch {};
 
     defer {
@@ -69,7 +111,25 @@ pub fn main() !void {
 
     const allocator = arena.allocator();
 
+    hl = Highlight{
+        .allocator = allocator,
+    };
+
+    const magic_string_that_removes_the_input_text_after_prompt = "\x1B[A\r\x1B[6C\x1B[K";
+    // AI explains:
+    // Here’s what each part does:
+    // •	\x1B[A: Moves the cursor up one line.
+    // •	\r: Returns the cursor to the beginning of the line.
+    // •	\x1B[6C: Moves the cursor 6 columns to the right (i.e. past "zepl> ").
+    // •	\x1B[K: Clears from the cursor’s current position to the end of the line.
+
     while (try ln.linenoise("\x1B[1mzepl> \x1B[0m")) |input| {
+        if (ln.is_tty) {
+            std.debug.print(magic_string_that_removes_the_input_text_after_prompt, .{});
+            const inputZ = std.fmt.allocPrintZ(allocator, "{s}", .{input}) catch unreachable;
+            highlight(inputZ);
+        }
+
         defer _ = arena.reset(.retain_capacity);
         try ln.history.add(input);
         snippet_num += 1;
@@ -120,7 +180,7 @@ pub fn main() !void {
             continue;
         }
 
-        const file_name = try std.fmt.allocPrint(allocator, "snippet_{d}.zig", .{snippet_num});
+        const file_name = try std.fmt.allocPrint(allocator, "generated/snippet_{d}.zig", .{snippet_num});
         try makeSnippet(file_name, fbs_output.getWritten());
 
         const dylib_name = compilation.compileSnippet(allocator, file_name, snippet_num) catch |err| {
@@ -152,4 +212,10 @@ pub fn main() !void {
 test {
     std.testing.refAllDecls(@This());
     // or refAllDeclsRecursive
+
+}
+
+fn fib(comptime n: comptime_int) comptime_int {
+    if (n <= 1) return n;
+    return fib(n - 1) + fib(n - 2);
 }

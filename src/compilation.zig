@@ -23,7 +23,7 @@ var compilation_stderr_buf: [10000]u8 = undefined;
 pub fn snippetChecksOut(allocator: std.mem.Allocator, file_content: []const u8) !CompilationResult {
     defer tmpfile_num += 1;
 
-    const file_name = try std.fmt.allocPrint(allocator, "tmpfile_{d}.zig", .{tmpfile_num});
+    const file_name = try std.fmt.allocPrint(allocator, "generated/tmpfile_{d}.zig", .{tmpfile_num});
     const temp_file = try std.fs.cwd().createFile(file_name, .{});
     temp_file.writeAll(file_content) catch unreachable;
 
@@ -41,7 +41,7 @@ pub fn snippetChecksOut(allocator: std.mem.Allocator, file_content: []const u8) 
 
     const term = try child.wait();
 
-    log.debug("  {s} compilation exit status: {d}\n", .{ file_name, term });
+    log.debug("  {s} compilation exit status: {any}\n", .{ file_name, term });
 
     return CompilationResult{ .term = term, .stderr = res };
 }
@@ -65,7 +65,39 @@ pub fn compileSnippet(allocator: std.mem.Allocator, file_name: []const u8, snipp
     }
 
     const builtin = @import("builtin");
-    const res = std.fmt.allocPrintZ(allocator, "./libsnippet_{d}{s}", .{ snippet_num, builtin.os.tag.dynamicLibSuffix() }) catch unreachable;
+    const gen_file = std.fmt.allocPrintZ(allocator, "libsnippet_{d}{s}", .{ snippet_num, builtin.os.tag.dynamicLibSuffix() }) catch unreachable;
+    const res = std.fmt.allocPrintZ(allocator, "./generated/libsnippet_{d}{s}", .{ snippet_num, builtin.os.tag.dynamicLibSuffix() }) catch unreachable;
+
+    const cwd = std.fs.cwd();
+
+    const generated = try cwd.openDir("generated", .{});
+    _ = try generated.stat();
+    log.debug("  generated file is: {s}\n", .{gen_file});
+    log.debug("  target location is is: {s}\n", .{res});
+
+    var buf: [1000]u8 = undefined;
+    const should_be_here = try cwd.realpath(gen_file, &buf);
+    log.debug("  should be here: {s}\n", .{should_be_here});
+
+    try cwd.access(gen_file, .{});
+
+    std.fs.Dir.copyFile(cwd, gen_file, generated, gen_file, .{}) catch unreachable;
+
+    //try cwd.copyFile(gen_file, generated, res, .{});
+    try cwd.deleteFile(gen_file);
+
+    const gen_file_o = std.fmt.allocPrintZ(allocator, "libsnippet_{d}{s}.o", .{ snippet_num, builtin.os.tag.dynamicLibSuffix() }) catch unreachable;
+    cwd.deleteFile(gen_file_o) catch |err| {
+        switch (err) {
+            error.FileNotFound => {
+                log.debug("  file not found (only tested on mac)\n", .{});
+            },
+            else => {
+                return err;
+            },
+        }
+    };
+
     log.debug("  compiled {s} into {s}\n", .{ file_name, res });
     return res;
 }
@@ -78,7 +110,7 @@ test "snippetChecksOut returns true for a valid snippet" {
     const allocator = arena.allocator();
     const valid_snippet = "pub fn main() void {}";
     const result = try Compilation.snippetChecksOut(allocator, valid_snippet);
-    try std.testing.expect(result);
+    try std.testing.expect(result.isSuccess());
 }
 
 test "snippetChecksOut returns false for an invalid snippet" {
@@ -89,5 +121,5 @@ test "snippetChecksOut returns false for an invalid snippet" {
     // An invalid snippet (missing closing brace)
     const invalid_snippet = "pub fn main() void {";
     const result = try Compilation.snippetChecksOut(allocator, invalid_snippet);
-    try std.testing.expect(!result);
+    try std.testing.expect(!result.isSuccess());
 }

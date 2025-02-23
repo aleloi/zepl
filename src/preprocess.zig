@@ -105,11 +105,15 @@ fn preprocDecl(pa: PreprocArgs, parsed: parse.ParsedDecl) !PreprocResult {
         \\{s}  // comptime, pa.source
         \\
         \\ export fn __snippet_side_effects_{d}() void {{  // pa.snippet_num
-        \\   
-        \\    @import("std").debug.print("{{any}}\n", .{{switch (@typeInfo(@TypeOf({s}))) {{
+        \\    
+        \\        const __std = @import("std");
+        \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}", 
+        \\   .{{switch (@typeInfo(@TypeOf({s}))) {{
         \\      .Fn => &({s}),
         \\       else => {s},
-        \\   }} }});        
+        \\   }} }}) catch unreachable;        
+        \\       
+        \\  highlight(inputZ);    
         \\ }}
         \\
     , .{ pa.rc.current_context.items, pa.source, pa.snippet_num, parsed.name, parsed.name, parsed.name });
@@ -157,10 +161,14 @@ pub fn preprocess(pa: PreprocArgs) !PreprocResult {
         .value => {
             const print_stmt = try std.fmt.allocPrint(pa.allocator,
                 \\
-                \\    @import("std").debug.print("{{any}}\n", .{{switch (@typeInfo(@TypeOf({s}))) {{
+                \\        const __std = @import("std");
+                \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}", 
+                \\   .{{switch (@typeInfo(@TypeOf({s}))) {{
                 \\      .Fn => &({s}),
                 \\       else => {s},
-                \\   }} }});        
+                \\   }} }}) catch unreachable;        
+                \\       
+                \\  highlight(inputZ);    
                 \\ 
             , .{ pa.source, pa.source, pa.source });
             const side_effects = try std.fmt.allocPrint(pa.allocator, "export fn __snippet_{d}() void {{ \n {s} \n }}\n", .{ pa.snippet_num, print_stmt });

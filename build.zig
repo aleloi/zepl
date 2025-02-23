@@ -27,28 +27,47 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const linenoise = b.dependency("linenoise", .{ .target = target, .optimize = optimize }).module("linenoise");
-    // const tmpfile = b.dependency("tmpfile", .{ .target = target, .optimize = optimize }).module("tmpfile");
+    // const treez = b.dependency("treez", .{
+    //     .target = target,
+    //     .optimize = optimize,
+    // }).module("treez");
 
-    // We will also create a module for our other entry point, 'main.zig'.
-    const exe_mod = b.createModule(.{
-        // `root_source_file` is the Zig "entry point" of the module. If a module
-        // only contains e.g. external object files, you can make this `null`.
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/main.zig"),
+    const syntax = b.dependency("syntax", .{
         .target = target,
         .optimize = optimize,
-        .imports = &.{
-            .{
-                .name = "linenoise",
-                .module = linenoise,
-            },
-            // .{
-            //     .name = "tmpfile",
-            //     .module = tmpfile,
-            // },
-        },
-    });
+    }).module("syntax");
+
+    const ansi_term = b.dependency("ansi-term", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("ansi-term");
+
+    // // const tmpfile = b.dependency("tmpfile", .{ .target = target, .optimize = optimize }).module("tmpfile");
+
+    // // We will also create a module for our other entry point, 'main.zig'.
+    // const exe_mod = b.createModule(.{
+    //     // `root_source_file` is the Zig "entry point" of the module. If a module
+    //     // only contains e.g. external object files, you can make this `null`.
+    //     // In this case the main source file is merely a path, however, in more
+    //     // complicated build scripts, this could be a generated file.
+    //     .root_source_file = b.path("src/main.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    //     .imports = &.{
+    //         .{
+    //             .name = "linenoise",
+    //             .module = linenoise,
+    //         },
+    //         .{
+    //             .name = "treez",
+    //             .module = treez,
+    //         },
+    //         // .{
+    //         //     .name = "tmpfile",
+    //         //     .module = tmpfile,
+    //         // },
+    //     },
+    // });
 
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
@@ -59,6 +78,27 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         //.root_module = exe_mod,
     });
+
+    //exe.root_module.addImport("treez", treez); //.module("treez"));
+    exe.root_module.addImport("linenoise", linenoise); //.module("linenoise"));
+    exe.root_module.addImport("syntax", syntax); //.module("syntax"));
+    exe.root_module.addImport("ansi-term", ansi_term); //.module("ansi_term"));
+    exe.linkLibC();
+
+    // exe.linkLibrary(b.dependency("tree-sitter", .{
+    //     .target = target,
+    //     .optimize = optimize,
+    // }).artifact("tree-sitter"));
+
+    // exe.linkLibrary(b.dependency("tree-sitter-zig", .{
+    //     .target = target,
+    //     .optimize = optimize,
+    // }).artifact("tree-sitter-zig"));
+
+    // exe.linkLibrary(b.dependency("syntax", .{
+    //     .target = target,
+    //     .optimize = optimize,
+    // }).artifact("syntax"));
 
     const check_step = b.step("check", "for ZLS");
     check_step.dependOn(&exe.step);
@@ -81,44 +121,48 @@ pub fn build(b: *std.Build) void {
         snippet_step.dependOn(&snippet_exe.step);
     }
 
-    var exe_unit_tests = b.addTest(.{
+    const exe_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    // TODO this also doesn't work; 0.14 has '.pointer'
-    switch (@typeInfo(@TypeOf(exe_mod))) {
-        .Pointer => {
-            exe.root_module = exe_mod.*;
-            exe_unit_tests.root_module = exe_mod.*;
-        },
-        else => {
-            exe.root_module = exe_mod;
-            exe_unit_tests.root_module = exe_mod;
-        },
-    }
+    // exe_unit_tests.root_module.addImport("treez", treez); //.module("treez"));
+    exe_unit_tests.root_module.addImport("linenoise", linenoise); //.module("linenoise"));
 
-    if (false) {
-        const zig_version = @import("builtin").zig_version;
+    // // TODO this also doesn't work; 0.14 has '.pointer'
+    // // TODO this also doesn't work; 0.14 has '.pointer'
+    // switch (@typeInfo(@TypeOf(exe_mod))) {
+    //     .Pointer => {
+    //         //exe.root_module = exe_mod.*;
+    //         exe_unit_tests.root_module = exe_mod.*;
+    //     },
+    //     else => {
+    //         //exe.root_module = exe_mod;
+    //         exe_unit_tests.root_module = exe_mod;
+    //     },
+    // }
 
-        //@compileLog(zig_version);
-        // TODO is comparing versions not comptime?
-        if (zig_version.order(std.SemanticVersion{
-            .major = 0,
-            .minor = 14,
-            .patch = 0, //
-            .pre = "dev.1",
-        }) == .lt or false) {
-            exe.root_module = exe_mod.*;
-            exe_unit_tests.root_module = exe_mod.*;
-        } else {
-            unreachable; // zig version too new
-            //@compileError("zig version is too new");
-            // exe.root_module = exe_mod;
-            // exe_unit_tests.root_module = exe_mod;
-        }
-    }
+    // if (false) {
+    //     const zig_version = @import("builtin").zig_version;
+
+    //     //@compileLog(zig_version);
+    //     // TODO is comparing versions not comptime?
+    //     if (zig_version.order(std.SemanticVersion{
+    //         .major = 0,
+    //         .minor = 14,
+    //         .patch = 0, //
+    //         .pre = "dev.1",
+    //     }) == .lt or false) {
+    //         exe.root_module = exe_mod.*;
+    //         exe_unit_tests.root_module = exe_mod.*;
+    //     } else {
+    //         unreachable; // zig version too new
+    //         //@compileError("zig version is too new");
+    //         // exe.root_module = exe_mod;
+    //         // exe_unit_tests.root_module = exe_mod;
+    //     }
+    // }
 
     exe.linkLibC();
 
