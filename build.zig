@@ -129,6 +129,8 @@ pub fn build(b: *std.Build) void {
 
     // exe_unit_tests.root_module.addImport("treez", treez); //.module("treez"));
     exe_unit_tests.root_module.addImport("linenoise", linenoise); //.module("linenoise"));
+    exe_unit_tests.root_module.addImport("syntax", syntax); //.module("syntax"));
+    exe_unit_tests.root_module.addImport("ansi-term", ansi_term); //.module("ansi_term"));
 
     // // TODO this also doesn't work; 0.14 has '.pointer'
     // // TODO this also doesn't work; 0.14 has '.pointer'
