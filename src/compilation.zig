@@ -79,13 +79,13 @@ pub fn compileSnippet(allocator: std.mem.Allocator, file_name: []const u8, snipp
     const should_be_here = try cwd.realpath(gen_file, &buf);
     log.debug("  should be here: {s}\n", .{should_be_here});
 
-    try cwd.access(gen_file, .{});
+    // must work, we just created it; we can't continue if it doesn't any way.
+    try std.fs.Dir.copyFile(cwd, gen_file, generated, gen_file, .{});
 
-    std.fs.Dir.copyFile(cwd, gen_file, generated, gen_file, .{}) catch unreachable;
-
-    //try cwd.copyFile(gen_file, generated, res, .{});
+    // again - must work, we just copied from it
     try cwd.deleteFile(gen_file);
 
+    // the .o files are only to clean up.
     const gen_file_o = std.fmt.allocPrintZ(allocator, "libsnippet_{d}{s}.o", .{ snippet_num, builtin.os.tag.dynamicLibSuffix() }) catch unreachable;
     cwd.deleteFile(gen_file_o) catch |err| {
         switch (err) {

@@ -76,12 +76,15 @@ export fn highlight(inputZ: [*:0]const u8) callconv(.C) void {
     const inputS: [:0]const u8 = inputZ[0..len :0];
 
     if (is_tty) {
-        hl.highlight(inputS, hl_writer.writer()) catch unreachable;
+        hl.highlight(inputS, hl_writer.writer()) catch |err| {
+            log.err("  highlight error: {}\n", .{err});
+            std.debug.print("{s}", .{inputS});
+        };
+        _ = hl_writer.write("\n") catch unreachable;
         hl_writer.flush() catch unreachable;
     } else {
         std.debug.print("{s}", .{inputS});
     }
-    std.debug.print("\n", .{});
 }
 
 /// Read-Eval-Print Loop.

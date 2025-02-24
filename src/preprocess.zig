@@ -107,7 +107,7 @@ fn preprocDecl(pa: PreprocArgs, parsed: parse.ParsedDecl) !PreprocResult {
         \\ export fn __snippet_side_effects_{d}() void {{  // pa.snippet_num
         \\    
         \\        const __std = @import("std");
-        \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}", 
+        \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}\n", 
         \\   .{{switch (@typeInfo(@TypeOf({s}))) {{
         \\      .Fn => &({s}),
         \\       else => {s},
@@ -162,7 +162,7 @@ pub fn preprocess(pa: PreprocArgs) !PreprocResult {
             const print_stmt = try std.fmt.allocPrint(pa.allocator,
                 \\
                 \\        const __std = @import("std");
-                \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}", 
+                \\ const inputZ = __std.fmt.allocPrintZ(__std.heap.page_allocator, "{{any}}\n", 
                 \\   .{{switch (@typeInfo(@TypeOf({s}))) {{
                 \\      .Fn => &({s}),
                 \\       else => {s},

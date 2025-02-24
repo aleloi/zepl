@@ -19,7 +19,7 @@ pub fn highlight(self: Self, source: [:0]const u8, writer: anytype) !void {
     try syntax_obj.refresh_from_string(source);
 
     // Hard-code theme to "default"
-    const theme = get_theme_by_name("default") orelse unreachable;
+    const theme = get_theme_by_name("default") orelse return error.Stop;
 
     //std.debug.print(" theme name: {any}\n\n", .{theme});
 
