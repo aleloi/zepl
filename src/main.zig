@@ -5,7 +5,8 @@ const std = @import("std");
 pub const compilation = @import("compilation.zig");
 pub const Linenoise = @import("linenoise").Linenoise;
 pub const preprocess = @import("preprocess.zig");
-pub const Highlight = @import("highlight.zig");
+
+const zepl_exports = @import("zepl_exports.zig");
 
 const log = std.log.scoped(.zepl);
 
@@ -14,12 +15,6 @@ pub var std_options = .{
     .logFn = logFn,
 };
 
-var exportable_log_level: std.log.Level = .info;
-
-var log_level_ptr: *std.log.Level = &exportable_log_level;
-comptime {
-    @export(log_level_ptr, .{ .name = "log_level" });
-}
 // comptime {
 //     @export(options_ptr, .{ .name = "log_options" });
 // }
@@ -28,7 +23,7 @@ comptime {
 
 /// See `std.log`.
 pub fn logFn(comptime level: std.log.Level, comptime scope: @TypeOf(.EnumLiteral), comptime format: []const u8, args: anytype) void {
-    if (@intFromEnum(level) <= @intFromEnum(exportable_log_level)) {
+    if (@intFromEnum(level) <= @intFromEnum(zepl_exports.exportable_log_level)) {
         const scope_prefix = "(" ++ @tagName(scope) ++ ") ";
         const prefix = "  [" ++ comptime level.asText() ++ "] " ++ scope_prefix;
         std.debug.print(prefix ++ format, args);
@@ -60,35 +55,23 @@ fn runSideEffects(handle: *anyopaque, sideEffectsName: [:0]const u8) !void {
         log.err("  Couldn't load side effects function from dylib, can't continue. This is probably a bug. Error is: {?s}\n", .{std.c.dlerror()});
         std.process.exit(1);
     };
-    const myFun: *const fn () void = @ptrCast(@alignCast(sym));
-    myFun();
+    const my_fun: *const fn () void = @ptrCast(@alignCast(sym));
+    call_with_breakpoint(my_fun);
+    //myFun();
 }
+//extern fn test_breakpoint() void;
 
-var hl: Highlight = undefined;
-const stdout = std.io.getStdOut().writer();
-var hl_writer = std.io.bufferedWriter(stdout);
+extern fn call_me_with_breakpoint() void;
+extern fn call_with_breakpoint(*const anyopaque) void;
 
-var is_tty: bool = undefined;
-
-/// export so it can be called from generated code.
-export fn highlight(inputZ: [*:0]const u8) callconv(.C) void {
-    const len = std.mem.indexOfSentinel(u8, 0, inputZ);
-    const inputS: [:0]const u8 = inputZ[0..len :0];
-
-    if (is_tty) {
-        hl.highlight(inputS, hl_writer.writer()) catch |err| {
-            log.err("  highlight error: {}\n", .{err});
-            std.debug.print("{s}", .{inputS});
-        };
-        _ = hl_writer.write("\n") catch unreachable;
-        hl_writer.flush() catch unreachable;
-    } else {
-        std.debug.print("{s}", .{inputS});
-    }
+fn testBreakpoint() void {
+    call_with_breakpoint(@ptrCast(@alignCast(&call_me_with_breakpoint)));
 }
 
 /// Read-Eval-Print Loop.
 pub fn main() !void {
+    //testBreakpoint();
+    //test_breakpoint();
     //try test_syntax();
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
@@ -96,13 +79,12 @@ pub fn main() !void {
     const ReplContext = @import("repl_context.zig").ReplContext;
     var zepl_context = ReplContext.init(std.heap.page_allocator);
 
-    try zepl_context.current_context.appendSlice(
-        \\extern const log_level: *@import("std").log.Level;
-        \\extern fn highlight(inputZ: [*:0]const u8) callconv(.C) void;
-    );
+    // try zepl_context.current_context.appendSlice(
+    //     \\extern const log_level: *@import("std").log.Level;
+    //     \\extern fn highlight(inputZ: [*:0]const u8) callconv(.C) void;
+    // );
 
     var ln = Linenoise.init(std.heap.page_allocator);
-    is_tty = ln.is_tty;
     ln.history.load("history.txt") catch {};
 
     defer {
@@ -114,9 +96,15 @@ pub fn main() !void {
 
     const allocator = arena.allocator();
 
-    hl = Highlight{
+    // TODO maybe an .init() ?
+    zepl_exports.is_tty = ln.is_tty;
+    zepl_exports.hl = zepl_exports.Highlight{
         .allocator = allocator,
     };
+
+    try zepl_context.current_context.appendSlice(@embedFile("zepl_externs.zig"));
+
+    //_ = zepl_exports.setup_breakpoint();
 
     const magic_string_that_removes_the_input_text_after_prompt = "\x1B[A\r\x1B[6C\x1B[K";
     // AI explains:
@@ -127,10 +115,10 @@ pub fn main() !void {
     // •	\x1B[K: Clears from the cursor’s current position to the end of the line.
 
     while (try ln.linenoise("\x1B[1mzepl> \x1B[0m")) |input| {
-        if (ln.is_tty) {
+        if (ln.is_tty and zepl_exports.do_highlight) {
             std.debug.print(magic_string_that_removes_the_input_text_after_prompt, .{});
             const inputZ = std.fmt.allocPrintZ(allocator, "{s}", .{input}) catch unreachable;
-            highlight(inputZ);
+            zepl_exports.highlight(inputZ);
         }
 
         defer _ = arena.reset(.retain_capacity);
@@ -204,8 +192,12 @@ pub fn main() !void {
         const sideEffectsName = try @TypeOf(pres).sideEffectsName(allocator, snippet_num);
         const handle = try loadDylib(dylib_name);
         {
-            std.debug.print("\x1B[36m", .{});
-            defer std.debug.print("\x1B[0m", .{});
+            if (ln.is_tty and zepl_exports.do_highlight) {
+                std.debug.print("\x1B[36m", .{});
+            }
+            defer {
+                if (ln.is_tty and zepl_exports.do_highlight) std.debug.print("\x1B[0m", .{});
+            }
             try runSideEffects(handle, sideEffectsName);
         }
     }

@@ -42,6 +42,18 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     }).module("ansi-term");
 
+    var breakpoint = b.addStaticLibrary(.{
+        .name = "breakpoint",
+        .target = target,
+        .optimize = optimize,
+    });
+
+    breakpoint.linkLibC();
+    breakpoint.addCSourceFile(.{ .file = b.path("src/breakpoint.c"), .flags = &.{} });
+    //breakpoint.addIncludePath(b.path("src"));
+
+    b.installArtifact(breakpoint);
+
     // // const tmpfile = b.dependency("tmpfile", .{ .target = target, .optimize = optimize }).module("tmpfile");
 
     // // We will also create a module for our other entry point, 'main.zig'.
@@ -84,7 +96,7 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("syntax", syntax); //.module("syntax"));
     exe.root_module.addImport("ansi-term", ansi_term); //.module("ansi_term"));
     exe.linkLibC();
-
+    exe.linkLibrary(breakpoint);
     // exe.linkLibrary(b.dependency("tree-sitter", .{
     //     .target = target,
     //     .optimize = optimize,
