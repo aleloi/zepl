@@ -6,7 +6,9 @@
     //
     // It is redundant to include "zig" in this name because it is already
     // within the Zig package namespace.
-    .name = "zepl",
+    .name = .zepl,
+
+    .fingerprint = 0xe1c2aacd026db9,
 
     // This is a [Semantic Version](https://semver.org/).
     // In a future version of Zig it will be used for package deduplication.
@@ -23,27 +25,23 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .linenoise = .{
-            .url = "https://github.com/mrjbq7/linenoize/archive/af2029faaaddcb58e99c195a5f146bbb1af0f90c.tar.gz",
-            .hash = "12208cf74c4291f3c8a314fbb2afec1cd922c58ee9f0d0e160894ad7c4cef584e98d",
-        },
-        .treez = .{
-            .url = "https://github.com/ziglibs/treez/archive/a5e176441cde3d309fcdbf570e364d3706936c11.tar.gz",
-            .hash = "122070dab8241fb4523c77666f225159876da1eb40b04ce9069262cf9ef9c8d1d03b",
-        },
-        .@"tree-sitter" = .{
-            .url = "https://github.com/tree-sitter/tree-sitter/archive/cad2d03101341296906971464ee68f811debea0d.tar.gz",
-            .hash = "1220937a628d9e5fe95b8f934d60486471730a0f661912c1f0e16542ae2151262146",
-        },
+        // .treez = .{
+        //     .url = "https://github.com/ziglibs/treez/archive/a5e176441cde3d309fcdbf570e364d3706936c11.tar.gz",
+        //     .hash = "122070dab8241fb4523c77666f225159876da1eb40b04ce9069262cf9ef9c8d1d03b",
+        // },
+        // .@"tree-sitter" = .{
+        //     .url = "https://github.com/tree-sitter/tree-sitter/archive/cad2d03101341296906971464ee68f811debea0d.tar.gz",
+        //     .hash = "1220937a628d9e5fe95b8f934d60486471730a0f661912c1f0e16542ae2151262146",
+        // },
 
         .syntax = .{
-            .url = "https://github.com/neurocyte/flow-syntax/archive/28bc77f4615488aaa269c25fc862864f4b3a7460.tar.gz",
-            .hash = "1220abddc10ca8f8b6b5477f8c007948c168504b9dd3516899fe37251890eeabf4ab",
+            .url = "https://github.com/neurocyte/flow-syntax/archive/149a7fc546cf465e6c949de4d7467490efdc14ea.tar.gz",
+            .hash = "122018215e874d8b75c1d41e594e62fe07032fb9a1412f1f71ac2af738348a425d33",
         },
 
-        .@"ansi-term" = .{
-            .url = "https://github.com/ziglibs/ansi-term/archive/0bb62115db6749044765fdb37c9791388e7970f2.tar.gz",
-            .hash = "12200719196e0abd325efa248fb03882c8fa2c7130e3ae1d57dbff72afc846b28495",
+        .ansi_term = .{
+            .url = "https://github.com/ziglibs/ansi-term/archive/c0e6ad093d4f6a9ed4e65d962d1e53b97888f989.tar.gz",
+            .hash = "122044aac3e64b9273fc275d0c2ac6f2a748c91204487f03d9fcddb49e262572ebc1",
         },
 
         // Load the generated grammar parser from our fork. The
@@ -54,19 +52,24 @@
         // building - we COULD build the cli from @"tree-sitter", and
         // run in on the grammar in a build step, but this is much
         // simpler.
-        .@"tree-sitter-zig" = .{
-            .url = "https://github.com/aleloi/tree-sitter-zig/archive/b677dba1f925424787048180f5bbe2cf7f5835d4.tar.gz",
-            .hash = "1220f4c3957b38a0b96ec259dbd8f354a6e8ca5735164f8190885882454188e80bd0",
-        },
+        // .@"tree-sitter-zig" = .{
+        //     .url = "https://github.com/aleloi/tree-sitter-zig/archive/b677dba1f925424787048180f5bbe2cf7f5835d4.tar.gz",
+        //     .hash = "1220f4c3957b38a0b96ec259dbd8f354a6e8ca5735164f8190885882454188e80bd0",
+        // },
         // .tmpfile = .{
         //     .url = "https://github.com/liyu1981/tmpfile.zig/archive/7ca14fb3a8a59e5ab83d3fca7aa0b85e087bd6ff.tar.gz",
         //     .hash = "122063aa2dd8a08b08f99f7d7714fb2d4f3657323b7d0168c699cef59154c9279891",
         // },
+        .linenoise = .{
+            .url = "git+https://github.com/joachimschmidt557/linenoize.git?ref=v0.1.0#8bf767663382624bd676b05829fa8d3975a05d88",
+            .hash = "linenoize-0.1.0-J7HK8IfXAABxH-V4Bp2Q0G7P-nrOmq9g8LuQAoX3SjDy",
+        },
     },
     .paths = .{
         "build.zig",
         "build.zig.zon",
         "src",
+        "test",
         // For example...
         //"LICENSE",
         //"README.md",

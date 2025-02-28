@@ -5,9 +5,9 @@ const std = @import("std");
 
 pub var exportable_log_level: std.log.Level = .info;
 
-var log_level_ptr: *std.log.Level = &exportable_log_level;
+const log_level_ptr: *std.log.Level = &exportable_log_level;
 comptime {
-    @export(log_level_ptr, .{ .name = "log_level" });
+    @export(&log_level_ptr, .{ .name = "log_level" });
 }
 
 pub const Highlight = @import("highlight.zig");

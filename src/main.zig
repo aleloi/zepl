@@ -10,7 +10,7 @@ const zepl_exports = @import("zepl_exports.zig");
 
 const log = std.log.scoped(.zepl);
 
-pub var std_options = .{
+pub const std_options = std.Options{
     .log_level = .debug,
     .logFn = logFn,
 };
@@ -109,10 +109,10 @@ pub fn main() !void {
     const magic_string_that_removes_the_input_text_after_prompt = "\x1B[A\r\x1B[6C\x1B[K";
     // AI explains:
     // Here’s what each part does:
-    // •	\x1B[A: Moves the cursor up one line.
-    // •	\r: Returns the cursor to the beginning of the line.
-    // •	\x1B[6C: Moves the cursor 6 columns to the right (i.e. past "zepl> ").
-    // •	\x1B[K: Clears from the cursor’s current position to the end of the line.
+    // •   \x1B[A: Moves the cursor up one line.
+    // •   \r: Returns the cursor to the beginning of the line.
+    // •   \x1B[6C: Moves the cursor 6 columns to the right (i.e. past "zepl> ").
+    // •   \x1B[K: Clears from the cursor’s current position to the end of the line.
 
     while (try ln.linenoise("\x1B[1mzepl> \x1B[0m")) |input| {
         if (ln.is_tty and zepl_exports.do_highlight) {
@@ -206,6 +206,8 @@ pub fn main() !void {
 // To make sure tests run with "zig build test"
 test {
     std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(@import("./test/test_walk.zig"));
+
     // or refAllDeclsRecursive
 
 }

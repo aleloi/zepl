@@ -37,10 +37,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     }).module("syntax");
 
-    const ansi_term = b.dependency("ansi-term", .{
+    const ansi_term = b.dependency("ansi_term", .{
         .target = target,
         .optimize = optimize,
-    }).module("ansi-term");
+    }).module("ansi_term");
 
     var breakpoint = b.addStaticLibrary(.{
         .name = "breakpoint",
@@ -52,7 +52,7 @@ pub fn build(b: *std.Build) void {
     breakpoint.addCSourceFile(.{ .file = b.path("src/breakpoint.c"), .flags = &.{} });
     //breakpoint.addIncludePath(b.path("src"));
 
-    b.installArtifact(breakpoint);
+    //b.installArtifact(breakpoint);
 
     // // const tmpfile = b.dependency("tmpfile", .{ .target = target, .optimize = optimize }).module("tmpfile");
 
@@ -94,7 +94,8 @@ pub fn build(b: *std.Build) void {
     //exe.root_module.addImport("treez", treez); //.module("treez"));
     exe.root_module.addImport("linenoise", linenoise); //.module("linenoise"));
     exe.root_module.addImport("syntax", syntax); //.module("syntax"));
-    exe.root_module.addImport("ansi-term", ansi_term); //.module("ansi_term"));
+    exe.root_module.addImport("ansi_term", ansi_term); //.module("ansi_term"));
+    exe.use_lld = false;
     exe.linkLibC();
     exe.linkLibrary(breakpoint);
     // exe.linkLibrary(b.dependency("tree-sitter", .{
@@ -142,9 +143,9 @@ pub fn build(b: *std.Build) void {
     // exe_unit_tests.root_module.addImport("treez", treez); //.module("treez"));
     exe_unit_tests.root_module.addImport("linenoise", linenoise); //.module("linenoise"));
     exe_unit_tests.root_module.addImport("syntax", syntax); //.module("syntax"));
-    exe_unit_tests.root_module.addImport("ansi-term", ansi_term); //.module("ansi_term"));
+    exe_unit_tests.root_module.addImport("ansi_term", ansi_term); //.module("ansi_term"));
+    exe_unit_tests.linkLibrary(breakpoint);
 
-    // // TODO this also doesn't work; 0.14 has '.pointer'
     // // TODO this also doesn't work; 0.14 has '.pointer'
     // switch (@typeInfo(@TypeOf(exe_mod))) {
     //     .Pointer => {

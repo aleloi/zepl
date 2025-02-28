@@ -3,7 +3,7 @@ const std = @import("std");
 const syntax = @import("syntax");
 const Theme = @import("generated/theme.zig");
 const themes = @import("generated/themes.zig");
-const term = @import("ansi-term");
+const term = @import("ansi_term");
 
 const Self = @This();
 
@@ -176,11 +176,11 @@ fn set_ansi_style(writer: anytype, style: Theme.Style, name: []const u8) !void {
         .background = if (style.bg) |color| to_rgb_color(color.color) else term.style.Color.Default,
         .font_style = switch (style.fs orelse .normal) {
             .normal => term.style.FontStyle{},
-            .bold => term.style.FontStyle.bold,
-            .italic => term.style.FontStyle.italic,
-            .underline => term.style.FontStyle.underline,
-            .undercurl => term.style.FontStyle.underline,
-            .strikethrough => term.style.FontStyle.crossedout,
+            .bold => .{ .bold = true },
+            .italic => .{ .italic = true },
+            .underline => .{ .underline = true },
+            .undercurl => .{ .underline = true },
+            .strikethrough => .{ .crossedout = true },
         },
     };
     try update_ansi_style(writer, ansi_style, name);
